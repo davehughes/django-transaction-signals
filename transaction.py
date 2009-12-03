@@ -1,3 +1,6 @@
+# post_commit and post_rollback transaction signals for Django with monkey patching
+# Author Grégoire Cachet <gregoire.cachet@gmail.com>
+
 from django.db import transaction
 from django.dispatch import Signal
 
@@ -21,8 +24,8 @@ class TransactionSignals(object):
     
     def _init_signals(self):
         thread_ident = thread.get_ident()
-        assert thread_ident not in self.signals
-        self.signals[thread_ident] = ThreadSignals()
+        if thread_ident not in self.signals:
+            self.signals[thread_ident] = ThreadSignals()
         return self.signals[thread_ident]
         
     def _remove_signals(self):
