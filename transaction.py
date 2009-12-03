@@ -24,8 +24,8 @@ class TransactionSignals(object):
     
     def _init_signals(self):
         thread_ident = thread.get_ident()
-        if thread_ident not in self.signals:
-            self.signals[thread_ident] = ThreadSignals()
+        assert thread_ident not in self.signals
+        self.signals[thread_ident] = ThreadSignals()
         return self.signals[thread_ident]
         
     def _remove_signals(self):
@@ -43,6 +43,18 @@ class TransactionSignals(object):
             return self._get_signals()
         else:
             return self._init_signals()
+            
+    def _send_post_commit(self):
+        if self._has_signals():
+            _signals = self._get_signals()
+            self._remove_signals() 
+            _signals.post_commit.send(sender=transaction)
+    
+    def _send_post_rollback(self):
+        if self._has_signals():
+            _signals = self._get_signals()
+            self._remove_signals() 
+            _signals.post_rollback.send(sender=transaction)
     
     @property
     def post_commit(self):
@@ -55,18 +67,7 @@ class TransactionSignals(object):
 transaction.signals = TransactionSignals()
 
 # monkey patching
-old_enter_transaction_management = transaction.enter_transaction_management
-def enter_transaction_management(*args, **kwargs):
-    old_enter_transaction_management(*args, **kwargs)
-    transaction.signals._init_signals()
-transaction.enter_transaction_management = enter_transaction_management
 
-old_leave_transaction_management = transaction.leave_transaction_management
-def leave_transaction_management(*args, **kwargs):
-    old_leave_transaction_management(*args, **kwargs)
-    transaction.signals._remove_signals()
-transaction.leave_transaction_management = leave_transaction_management
-    
 old_managed = transaction.managed
 def managed(flag=True):
     to_commit = False
@@ -74,34 +75,34 @@ def managed(flag=True):
         to_commit = True
     old_managed(flag)
     if to_commit:
-        transaction.signals.post_commit.send(sender=transaction)
+        transaction.signals._send_post_commit()
 transaction.managed = managed
 
 old_commit_unless_managed = transaction.commit_unless_managed
 def commit_unless_managed(*args, **kwargs):
     old_commit_unless_managed(*args, **kwargs)
     if not transaction.is_managed():
-        transaction.signals.post_commit.send(sender=transaction)
+        transaction.signals._send_post_commit()
 transaction.commit_unless_managed = commit_unless_managed
 
 old_rollback_unless_managed = transaction.rollback_unless_managed
 def rollback_unless_managed(*args, **kwargs):
     old_rollback_unless_managed(*args, **kwargs)
     if not transaction.is_managed():
-        transaction.signals.post_rollback.send(sender=transaction)
+        transaction.signals._send_post_rollback()
 transaction.rollback_unless_managed = rollback_unless_managed
+
+# If post_commit or post_rollback signals set the transaction to dirty state
+# they must commit or rollback by themselves
 
 old_commit = transaction.commit
 def commit(*args, **kwargs):
     old_commit(*args, **kwargs)
-    transaction.signals.post_commit.send(sender=transaction)
-    old_commit(*args, **kwargs)
+    transaction.signals._send_post_commit()
 transaction.commit = commit
 
 old_rollback = transaction.rollback
 def rollback(*args, **kwargs):
     old_rollback(*args, **kwargs)
-    transaction.signals.post_rollback.send(sender=transaction)
-    old_rollback(*args, **kwargs) # If post_rollback signals wants to commit,
-                                  # it must do it by itself
+    transaction.signals._send_post_rollback()                                  
 transaction.rollback = rollback
