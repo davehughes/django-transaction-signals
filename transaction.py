@@ -1,5 +1,33 @@
 # post_commit and post_rollback transaction signals for Django with monkey patching
 # Author Grégoire Cachet <gregoire.cachet@gmail.com>
+# http://gist.github.com/247844
+# 
+# Usage:
+# You have to make sure to load this before you use signals.
+# For example, create utils/__init__.py and then utils/transaction.py contening 
+# this gist in you project. Then add "import utils.transaction" in your project
+# __init__.py file
+# 
+# Then, to use the signals, create a function and bind it to the post_commit
+# signal:
+# 
+# from django.db import transaction
+# 
+# def my_function(**kwargs):
+#     # do your stuff here
+#     pass
+# transaction.signals.post_commit.connect(my_function)
+# 
+# If you're using non-local variables in your callback function, make sure to
+# use non-weak reference or your variables could be garbarge collected before
+# the function gets called. For example, in a model save() method:
+# 
+# def save(self, *args, **kwargs):
+#     def my_function(**kwargs):
+#         # do your stuff here
+#         # access self variable
+#         self
+#     transaction.signals.post_commit.connect(my_function, weak=False)
 
 from django.db import transaction
 from django.dispatch import Signal
