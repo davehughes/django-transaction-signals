@@ -169,7 +169,7 @@ def rollback(*args, **kwargs):
 transaction.rollback = rollback
 
 
-def defer(f):
+def defer(f, *args, **kwargs):
     '''
     Wrapper that defers a function's execution until the current transaction
     commits, if a transaction is active.  Otherwise, executes as usual. Note 
@@ -194,7 +194,7 @@ def defer(f):
     >>> def transactional_update(value)
     >>>     print 'starting transaction'
     >>>     ... perform update ...
-    >>>     defer(log_success)('The transaction was successful')
+    >>>     defer(log_success, 'The transaction was successful')
     >>>     print 'finishing transaction'
     >>>
     >>> transactional_update('foo')
@@ -203,7 +203,7 @@ def defer(f):
     ... logging success
     '''
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper():
         if transaction.is_managed():
             @transaction.commit_on_success
             def f_deferred(*a, **kw):
