@@ -4,8 +4,8 @@ and rollback signals are not (as of this writing) supported in the core framewor
 issue tracker for background: [Ticket #14050](https://code.djangoproject.com/ticket/14050), 
 [Ticket #14051](https://code.djangoproject.com/ticket/14051))
 
-However, [a gist](https://gist.github.com/247844) written [Grégoire Cachet](https://github.com/gcachet)
-seemed to (mostly) do the trick.
+However, [a gist](https://gist.github.com/247844) written by [Grégoire Cachet](https://github.com/gcachet)
+seems to do the trick.  This module is an extension of his work.
 
 In addition to the base signals, I added a **defer()** function that can be used inside a transaction to defer the 
 execution of a function until the transaction has committed (I found this quite useful for triggering 
