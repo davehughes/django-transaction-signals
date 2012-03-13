@@ -17,7 +17,7 @@ __*You have to make sure to load this before you use signals.*__
 For example, add the the following line to your project's **\_\_init\_\_**.py file:
 
 ```python
-import django_transaction_signals.transaction
+import django_transaction_signals
 ```
  
 Then, to use the signals, create a function and bind it to the **post_commit** signal:
@@ -43,7 +43,12 @@ def save(self, *args, **kwargs):
 ```
 
 ### Usage of defer() function:
-This demonstrates a transactional update of a model object which registers a Celery task to be executed when the transaction commits successfully.
+__defer()__ registers a function to be run upon successful completion of the current transaction (if one exists).  Calling __defer(func, *args, **kwargs)__ translates to the following:
+
+* If a transaction is active, register a post-commit listener to execute func(*args, **kwargs)
+* If no transaction is active, execute func(*args, **kwargs) immediately
+
+This example demonstrates a transactional update of a model object which registers a Celery task to be executed when the transaction commits successfully.
 
 ```python
 from celery.task import task
