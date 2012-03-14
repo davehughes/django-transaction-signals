@@ -202,13 +202,10 @@ def defer(f, *args, **kwargs):
     ... finishing transaction
     ... logging success
     '''
-    @wraps(f)
-    def wrapper():
-        if transaction.is_managed():
-            @transaction.commit_on_success
-            def f_deferred(*a, **kw):
-                f(*args, **kwargs)
-            transaction.signals.post_commit.connect(f_deferred, weak=False)
-        else:
+    if transaction.is_managed():
+        @transaction.commit_on_success
+        def f_deferred(*a, **kw):
             f(*args, **kwargs)
-    return wrapper
+        transaction.signals.post_commit.connect(f_deferred, weak=False)
+    else:
+        f(*args, **kwargs)
