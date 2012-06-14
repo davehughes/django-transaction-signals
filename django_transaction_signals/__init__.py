@@ -130,7 +130,7 @@ def managed(*args, **kwargs):
     flag = kwargs.get('flag', True)
     if not flag and transaction.is_dirty():
         to_commit = True
-    old_managed(flag)
+    old_managed(*args, **kwargs)
     if to_commit:
         transaction.signals._send_post_commit()
     else:
