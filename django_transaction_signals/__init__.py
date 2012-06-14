@@ -1,35 +1,13 @@
 # -*- coding: utf-8 -*-
-# post_commit and post_rollback transaction signals for Django with monkey patching
+#
+# post_commit and post_rollback transaction signals for Django with monkey
+# patching
+#
 # Author Grégoire Cachet <gregoire.cachet@gmail.com>
 # http://gist.github.com/247844
 #
-# Usage:
-# You have to make sure to load this before you use signals.
-# For example, create utils/__init__.py and then utils/transaction.py contening
-# this gist in you project. Then add "import utils.transaction" in your project
-# __init__.py file
-#
-# Then, to use the signals, create a function and bind it to the post_commit
-# signal:
-#
-# from django.db import transaction
-#
-# def my_function(**kwargs):
-#     # do your stuff here
-#     pass
-# transaction.signals.post_commit.connect(my_function)
-#
-# If you're using non-local variables in your callback function, make sure to
-# use non-weak reference or your variables could be garbarge collected before
-# the function gets called. For example, in a model save() method:
-#
-# def save(self, *args, **kwargs):
-#     def my_function(**kwargs):
-#         # do your stuff here
-#         # access self variable
-#         self
-#     transaction.signals.post_commit.connect(my_function, weak=False)
-from functools import wraps
+# Usage: See README.md
+
 from django.db import transaction
 from django.dispatch import Signal
 
@@ -127,7 +105,7 @@ class TransactionSignals(object):
 
 transaction.signals = TransactionSignals()
 
-old_managed = transaction.managed
+
 def managed(*args, **kwargs):
     to_commit = False
     flag = kwargs.get('flag', True)
@@ -138,38 +116,38 @@ def managed(*args, **kwargs):
         transaction.signals._send_post_commit()
     else:
         transaction.signals._on_exit_without_update()
+old_managed = transaction.managed
 transaction.managed = managed
 
 
-old_commit_unless_managed = transaction.commit_unless_managed
 def commit_unless_managed(*args, **kwargs):
     old_commit_unless_managed(*args, **kwargs)
     if not transaction.is_managed():
         transaction.signals._send_post_commit()
+old_commit_unless_managed = transaction.commit_unless_managed
 transaction.commit_unless_managed = commit_unless_managed
 
 
-old_rollback_unless_managed = transaction.rollback_unless_managed
 def rollback_unless_managed(*args, **kwargs):
     old_rollback_unless_managed(*args, **kwargs)
     if not transaction.is_managed():
         transaction.signals._send_post_rollback()
+old_rollback_unless_managed = transaction.rollback_unless_managed
 transaction.rollback_unless_managed = rollback_unless_managed
 
-# If post_commit or post_rollback signals set the transaction to dirty state
-# they must commit or rollback by themselves
-
-old_commit = transaction.commit
+# If post_commit or post_rollback signal handlers put the transaction in a
+# dirty state, they must handle their own commits/rollbacks.
 def commit(*args, **kwargs):
     old_commit(*args, **kwargs)
     transaction.signals._send_post_commit()
+old_commit = transaction.commit
 transaction.commit = commit
 
 
-old_rollback = transaction.rollback
 def rollback(*args, **kwargs):
     old_rollback(*args, **kwargs)
     transaction.signals._send_post_rollback()
+old_rollback = transaction.rollback
 transaction.rollback = rollback
 
 
