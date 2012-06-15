@@ -135,6 +135,7 @@ def rollback_unless_managed(*args, **kwargs):
 old_rollback_unless_managed = transaction.rollback_unless_managed
 transaction.rollback_unless_managed = rollback_unless_managed
 
+
 # If post_commit or post_rollback signal handlers put the transaction in a
 # dirty state, they must handle their own commits/rollbacks.
 def commit(*args, **kwargs):
