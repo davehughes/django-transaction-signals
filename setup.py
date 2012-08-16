@@ -7,6 +7,5 @@ setuptools.setup(
     url='https://github.com/davehughes/django-transaction-signals',
     author='David Hughes',
     author_email='d@vidhughes.com',
-    description='django-transaction-signals adds post_commit and '
-                'post_rollback signal handlers to Django'
+    description='Adds post_commit and post_rollback signal handlers to Django'
 )
